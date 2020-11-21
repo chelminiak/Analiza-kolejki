@@ -217,11 +217,40 @@ def main(_argv):
             #color = colors[int(track.track_id) % len(colors)]
             #color = [i * 255 for i in color]
             #color = [(255,0,0), (0,255,0), (0,0,255)]
-            cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,0),2)
-           # cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)
+            #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,0),2)
+            #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)
             #cv2.putText(frame, class_name + "-" + str(track.track_id),(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
 
-        # if enable info flag then print details about each track
+            #r,g,b values for all pixels of frame
+            r = frame[int(bbox[0]):int(bbox[2]), int(bbox[1]):int(bbox[3]), 2:]
+            g = frame[int(bbox[0]):int(bbox[2]), int(bbox[1]):int(bbox[3]), 1:2] 
+            b = frame[int(bbox[0]):int(bbox[2]), int(bbox[1]):int(bbox[3]), :1] 
+            
+            
+            picture_3d=np.stack((r,g,b), axis=2)
+
+            #main color for each pixel - index (0-r, 1-g, 2-b)
+            main_color=np.argmax(picture_3d,axis=2)
+
+            #checking max value - index
+            max_value=np.argmax(np.bincount(main_color.flat))
+            
+            #print(str(maxx))
+
+
+            if (str(max_value)=="0"): 
+                print("Blue") 
+                cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(0,0,255),2)
+            if (str(max_value)=="1"): 
+                print("Green") 
+                
+                cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(0,255,0),2)
+            if (str(max_value)=="2"):
+                print("Red")
+                cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,0,0),2)
+            # if enable info flag then print details about each track
+
+
             if FLAGS.info:
                 print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
             center = (int(((bbox[0]) + (bbox[2]))/2), int(((bbox[1])+(bbox[3]))/2))
@@ -232,7 +261,7 @@ def main(_argv):
 
                 thickness = int(np.sqrt(64/float(j+1))*2)
                 cv2.line(frame, (pts[track.track_id][j-1]), (pts[track.track_id][j]), color, thickness)
-"""
+            """
             height, width, _ = frame.shape
             cv2.line(frame, (0, int(height)), (width, int(height)), (0, 0, 0), thickness=2)
             cv2.line(frame, (0, 0), (width, 0), (0, 0, 0), thickness=2)
