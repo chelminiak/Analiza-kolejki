@@ -1,5 +1,8 @@
 import os
 # comment out below line to enable tensorflow logging outputs
+from kolejka import Kolejka
+from osoba import Osoba
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import time
 import tensorflow as tf
@@ -60,6 +63,9 @@ def main(_argv):
     input_size = FLAGS.size
     video_path = FLAGS.video
 
+    #kolejka
+    #kolejka = Kolejka(0)
+
     from _collections import deque
     pts = [deque(maxlen=30) for _ in range(1000)]
     counter = []
@@ -76,6 +82,10 @@ def main(_argv):
     else:
         saved_model_loaded = tf.saved_model.load(FLAGS.weights, tags=[tag_constants.SERVING])
         infer = saved_model_loaded.signatures['serving_default']
+
+    #logs
+    #TODO choose path of the output
+    logs = open("./outputs/logs.txt", "w")
 
     # begin video capture
     try:
@@ -111,6 +121,7 @@ def main(_argv):
         image_data = image_data / 255.
         image_data = image_data[np.newaxis, ...].astype(np.float32)
         start_time = time.time()
+        time_in_video = vid.get(cv2.CAP_PROP_POS_MSEC)/1000 #in seconds
 
 
         # run detections on tflite if flag is set
@@ -180,8 +191,8 @@ def main(_argv):
         names = np.array(names)
         count = len(names)
         if FLAGS.count:
-            cv2.putText(frame, "Objects being tracked: {}".format(count), (5, 35), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 255, 0), 2)
-            print("Objects being tracked: {}".format(count))
+            cv2.putText(frame, "Current people count: {}".format(count), (5, 35), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 255, 0), 2)
+            print("Current people count: {}".format(count))
         # delete detections that are not in allowed_classes
         bboxes = np.delete(bboxes, deleted_indx, axis=0)
         scores = np.delete(scores, deleted_indx, axis=0)
@@ -241,16 +252,23 @@ def main(_argv):
             if (str(max_value)=="0"): 
                 print("Blue") 
                 cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(0,0,255),2)
+                #person = Osoba(2, time.time(), time.time(), 0.5 * (int(bbox[0])) + int(bbox[2]), 0.5 * (int(bbox[1]) + int(bbox[3])))
+                #kolejka.listaOsob.append(person)
+
             if (str(max_value)=="1"): 
-                print("Green") 
-                
+                print("Green")
                 cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(0,255,0),2)
+                #person = Osoba(1, time.time(), time.time(), 0.5 * (int(bbox[0])) + int(bbox[2]), 0.5 * (int(bbox[1]) + int(bbox[3])))
+                #kolejka.listaOsob.append(person)
+
             if (str(max_value)=="2"):
                 print("Red")
                 cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,0,0),2)
+                #person = Osoba(0, time.time(), time.time(), 0.5 * (int(bbox[0])) + int(bbox[2]), 0.5 * (int(bbox[1]) + int(bbox[3])))
+                #kolejka.listaOsob.append(person)
+
+
             # if enable info flag then print details about each track
-
-
             if FLAGS.info:
                 print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
             center = (int(((bbox[0]) + (bbox[2]))/2), int(((bbox[1])+(bbox[3]))/2))
@@ -281,6 +299,10 @@ def main(_argv):
         print("FPS: %.2f" % fps)
         result = np.asarray(frame)
         result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+
+        # write to log file
+        #TODO add categories
+        logs.write(str(time_in_video) + ";" + str(current_count) + ";\n")
         
         if not FLAGS.dont_show:
             cv2.imshow("Output Video", result)
@@ -290,6 +312,7 @@ def main(_argv):
             out.write(result)
         if cv2.waitKey(1) & 0xFF == ord('q'): break
     cv2.destroyAllWindows()
+    logs.close()
 
 if __name__ == '__main__':
     try:
