@@ -22,3 +22,14 @@ class Kolejka:
 
     def getListaOsob(self):
         return self._listaOsob
+
+    def getLiczbaOsobKategorie(self):
+        liczbaOsobKategorie = [0, 0, 0]
+        for osoba in self._listaOsob:
+            if osoba.getKategoria() == 0:
+                liczbaOsobKategorie[0] += 1
+            if osoba.getKategoria() == 1:
+                liczbaOsobKategorie[1] += 1
+            if osoba.getKategoria() == 2:
+                liczbaOsobKategorie[2] += 2
+        return liczbaOsobKategorie

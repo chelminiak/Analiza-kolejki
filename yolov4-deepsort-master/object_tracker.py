@@ -92,7 +92,7 @@ def main(_argv):
     try:
         vid = cv2.VideoCapture(int(video_path))
     except:
-        vid = cv2.VideoCapture(video_path)
+        vid = cv2.VideoCapture(video_path) #TODO change to exit program
 
     out = None
 
@@ -320,6 +320,10 @@ def main(_argv):
         #TODO add categories
         #TODO change current_count to kolejka.getLiczbaOsob()
         logs.write(str(time_in_video) + ";" + str(current_count) + ";\n")
+        
+        # TODO when color recognition works - use below lines to write logs
+        #peopleInCategories = kolejka.getLiczbaOsobKategorie()
+        #logs.write(str(time_in_video) + ";" + str(kolejka.getLiczbaOsob()) + ";" + str(peopleInCategories[0]) + ";" + str(peopleInCategories[1]) + ";" + str(peopleInCategories[2]) + "\n")
         
         if not FLAGS.dont_show:
             cv2.imshow("Output Video", result)
