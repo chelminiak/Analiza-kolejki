@@ -228,60 +228,61 @@ def main(_argv):
                 continue 
             bbox = track.to_tlbr()
             class_name = track.get_class()
+            try:
+                #check if it is new person
+                if kolejka.getOsoba(track.track_id) is None:
+                    #create person, detect color and add to kolejka (listaOsob)
+                
+            # draw bbox on screen
+                #color = colors[int(track.track_id) % len(colors)]
+                #color = [i * 255 for i in color]
+                #color = [(255,0,0), (0,255,0), (0,0,255)]
+                #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,0),2)
+                #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)
+                #cv2.putText(frame, class_name + "-" + str(track.track_id),(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
 
-            #check if it is new person
-            if kolejka.getOsoba(track.track_id) is None:
-                #create person, detect color and add to kolejka (listaOsob)
-            
-        # draw bbox on screen
-            #color = colors[int(track.track_id) % len(colors)]
-            #color = [i * 255 for i in color]
-            #color = [(255,0,0), (0,255,0), (0,0,255)]
-            #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,0),2)
-            #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)
-            #cv2.putText(frame, class_name + "-" + str(track.track_id),(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
-
-                #TODO work on detect colors
-                #r,g,b values for all pixels of frame
-                r = frame[int(bbox[0]):int(bbox[2]), int(bbox[1]):int(bbox[3]), 2:]
-                g = frame[int(bbox[0]):int(bbox[2]), int(bbox[1]):int(bbox[3]), 1:2]
-                b = frame[int(bbox[0]):int(bbox[2]), int(bbox[1]):int(bbox[3]), :1]
+                    #TODO work on detect colors
+                    #r,g,b values for all pixels of frame
+                    r = frame[int(bbox[0]):int(bbox[2]), int(bbox[1]):int(bbox[3]), 2:]
+                    g = frame[int(bbox[0]):int(bbox[2]), int(bbox[1]):int(bbox[3]), 1:2]
+                    b = frame[int(bbox[0]):int(bbox[2]), int(bbox[1]):int(bbox[3]), :1]
 
 
-                picture_3d=np.stack((r,g,b), axis=2)
+                    picture_3d=np.stack((r,g,b), axis=2)
 
-                #main color for each pixel - index (0-r, 1-g, 2-b)
-                main_color=np.argmax(picture_3d,axis=2)
+                    #main color for each pixel - index (0-r, 1-g, 2-b)
+                    main_color=np.argmax(picture_3d,axis=2)
 
-                #checking max value - index
-                max_value=np.argmax(np.bincount(main_color.flat))
+                    #checking max value - index
+                    max_value=np.argmax(np.bincount(main_color.flat))
 
-                #print(str(maxx))
+                    #print(str(maxx))
 
-                #TODO values of timestamp koniec ???
-                if (str(max_value)=="0"):
-                    print("Blue")
-                    #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(0,0,255),2)
-                    person = Osoba(track.track_id, 2, time_in_video, time_in_video, 0.5 * (int(bbox[0])) + int(bbox[2]), 0.5 * (int(bbox[1]) + int(bbox[3])))
-                    kolejka.dodajOsobe(person)
+                    #TODO values of timestamp koniec ???
+                    if (str(max_value)=="2"):
+                        print("Blue")
+                        #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(0,0,255),2)
+                        person = Osoba(track.track_id, 2, time_in_video, time_in_video, 0.5 * (int(bbox[0])) + int(bbox[2]), 0.5 * (int(bbox[1]) + int(bbox[3])))
+                        kolejka.dodajOsobe(person)
 
-                if (str(max_value)=="1"):
-                    print("Green")
-                    #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(0,255,0),2)
-                    person = Osoba(track.track_id, 1, time_in_video, time_in_video, 0.5 * ((int(bbox[0])) + int(bbox[2])), 0.5 * ((int(bbox[1]) + int(bbox[3]))))
-                    kolejka.dodajOsobe(person)
+                    if (str(max_value)=="1"):
+                        print("Green")
+                        #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(0,255,0),2)
+                        person = Osoba(track.track_id, 1, time_in_video, time_in_video, 0.5 * ((int(bbox[0])) + int(bbox[2])), 0.5 * ((int(bbox[1]) + int(bbox[3]))))
+                        kolejka.dodajOsobe(person)
 
-                if (str(max_value)=="2"):
-                    print("Red")
-                    #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,0,0),2)
-                    person = Osoba(track.track_id, 0, time_in_video, time_in_video, 0.5 * (int(bbox[0])) + int(bbox[2]), 0.5 * (int(bbox[1]) + int(bbox[3])))
-                    kolejka.dodajOsobe(person)
+                    if (str(max_value)=="0"):
+                        print("Red")
+                        #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,0,0),2)
+                        person = Osoba(track.track_id, 0, time_in_video, time_in_video, 0.5 * (int(bbox[0])) + int(bbox[2]), 0.5 * (int(bbox[1]) + int(bbox[3])))
+                        kolejka.dodajOsobe(person)
 
-            person = kolejka.getOsoba(track.track_id)
-            cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),colors[person.getKategoria()],2)
+                person = kolejka.getOsoba(track.track_id)
+                cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),colors[person.getKategoria()],2)
 
-            #print(kolejka.getLiczbaOsob())
-
+                #print(kolejka.getLiczbaOsob())
+            except ValueError:
+                pass
             # if enable info flag then print details about each track
             if FLAGS.info:
                 print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
