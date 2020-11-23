@@ -277,8 +277,8 @@ def main(_argv):
                     person = Osoba(track.track_id, 0, time_in_video, time_in_video, 0.5 * (int(bbox[0])) + int(bbox[2]), 0.5 * (int(bbox[1]) + int(bbox[3])))
                     kolejka.dodajOsobe(person)
 
-            for person in kolejka.getListaOsob():
-                cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),colors[person.getKategoria()],2)
+            person = kolejka.getOsoba(track.track_id)
+            cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),colors[person.getKategoria()],2)
 
             #print(kolejka.getLiczbaOsob())
 
