@@ -189,11 +189,11 @@ def main(_argv):
                 deleted_indx.append(i)
             else:
                 names.append(class_name)
-        names = np.array(names)
-        count = len(names)
-        if FLAGS.count: #TODO delete this flag, we will use kolejka.getLiczbaOsob()
-            cv2.putText(frame, "Current people count: {}".format(count), (5, 35), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 255, 0), 2)
-            print("Current people count: {}".format(count))
+        #names = np.array(names)
+        #count = len(names)
+        #TODO delete this flag, we will use kolejka.getLiczbaOsob() - DONE, chyba można usunąć
+        #cv2.putText(frame, "Current people count: {}".format(count), (5, 35), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 255, 0), 2)
+        #print("Current people count: {}".format(count))
         # delete detections that are not in allowed_classes
         bboxes = np.delete(bboxes, deleted_indx, axis=0)
         scores = np.delete(scores, deleted_indx, axis=0)
@@ -243,9 +243,9 @@ def main(_argv):
 
                     #TODO work on detect colors
                     #r,g,b values for all pixels of frame
-                    r = frame[int(bbox[0]):int(bbox[2]), int(bbox[1]):int(bbox[3]), 2:]
-                    g = frame[int(bbox[0]):int(bbox[2]), int(bbox[1]):int(bbox[3]), 1:2]
-                    b = frame[int(bbox[0]):int(bbox[2]), int(bbox[1]):int(bbox[3]), :1]
+                    r = frame[int(bbox[0]*1.05):int(bbox[2]*0.95), int(bbox[1]*1.1):int(bbox[3]*0.9), 2:]
+                    g = frame[int(bbox[0]*1.05):int(bbox[2]*0.95), int(bbox[1]*1.1):int(bbox[3]*0.9), 1:2]
+                    b = frame[int(bbox[0]*1.05):int(bbox[2]*0.95), int(bbox[1]*1.1):int(bbox[3]*0.9), :1]
 
 
                     picture_3d=np.stack((r,g,b), axis=2)
@@ -287,6 +287,7 @@ def main(_argv):
             if FLAGS.info:
                 print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
             center = (int(((bbox[0]) + (bbox[2]))/2), int(((bbox[1])+(bbox[3]))/2))
+            #not used
             """pts[track.track_id].append(center)
             for j in range(1, len(pts[track.track_id])):
                 if pts[track.track_id][j-1] is None or pts[track.track_id][j] is None:
@@ -294,7 +295,7 @@ def main(_argv):
 
                 thickness = int(np.sqrt(64/float(j+1))*2)
                 cv2.line(frame, (pts[track.track_id][j-1]), (pts[track.track_id][j]), color, thickness)
-            """
+            
             height, width, _ = frame.shape
             cv2.line(frame, (0, int(height)), (width, int(height)), (0, 0, 0), thickness=2)
             cv2.line(frame, (0, 0), (width, 0), (0, 0, 0), thickness=2)
@@ -305,10 +306,10 @@ def main(_argv):
                 if class_name == 'person':
                     counter.append(int(track.track_id))
                     current_count += 1
-
+            """
         #total_count = len(set(counter))
-        #TODO change current_count to kolejka.getLiczbaOsob()
-        cv2.putText(frame, "Current People Count: " + str(current_count), (0, 30), 0, 1, (255, 255, 0), 2)
+        #TODO change current_count to kolejka.getLiczbaOsob() - DONE
+        cv2.putText(frame, "Current People Count: " + str(kolejka.getLiczbaOsob()), (0, 30), 0, 1, (255, 255, 0), 2)
         #cv2.putText(frame, "Total Vehicle Count: " + str(total_count), (0,130), 0, 1, (0,0,255), 2)
         # calculate frames per second of running detections
         fps = 1.0 / (time.time() - start_time)
@@ -318,8 +319,8 @@ def main(_argv):
 
         # write to log file
         #TODO add categories
-        #TODO change current_count to kolejka.getLiczbaOsob()
-        logs.write(str(time_in_video) + ";" + str(current_count) + ";\n")
+        #TODO change current_count to kolejka.getLiczbaOsob() - DONE
+        logs.write(str(time_in_video) + ";" + str(kolejka.getLiczbaOsob()) + ";\n")
         
         # TODO when color recognition works - use below lines to write logs
         #peopleInCategories = kolejka.getLiczbaOsobKategorie()

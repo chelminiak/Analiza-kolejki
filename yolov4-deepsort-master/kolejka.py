@@ -12,7 +12,10 @@ class Kolejka:
         self._liczbaOsob -= 1
 
     def getLiczbaOsob(self):
-        return self._liczbaOsob
+        liczbaOsob=0
+        for osoba in self._listaOsob:   
+            liczbaOsob+=1
+        return liczbaOsob
 
     def getOsoba(self, trackId):
         for osoba in self._listaOsob:
