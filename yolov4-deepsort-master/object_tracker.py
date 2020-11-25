@@ -189,9 +189,8 @@ def main(_argv):
                 deleted_indx.append(i)
             else:
                 names.append(class_name)
-        #names = np.array(names)
+        names = np.array(names)
         #count = len(names)
-        #TODO delete this flag, we will use kolejka.getLiczbaOsob() - DONE, chyba można usunąć
         #cv2.putText(frame, "Current people count: {}".format(count), (5, 35), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 255, 0), 2)
         #print("Current people count: {}".format(count))
         # delete detections that are not in allowed_classes
@@ -216,7 +215,7 @@ def main(_argv):
         # Call the tracker
         tracker.predict()
         tracker.update(detections)
-        current_count = int(0)
+        #current_count = int(0)
 
         # update tracks
         for track in tracker.tracks:
@@ -227,7 +226,7 @@ def main(_argv):
                     kolejka.usunOsobe(personToDelete)
                 continue 
             bbox = track.to_tlbr()
-            class_name = track.get_class()
+            #class_name = track.get_class()
             try:
                 #check if it is new person
                 if kolejka.getOsoba(track.track_id) is None:
@@ -241,12 +240,42 @@ def main(_argv):
                 #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)
                 #cv2.putText(frame, class_name + "-" + str(track.track_id),(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
 
+                    #TODO - cut x% to better color recognition
+                    r = []
+                    g = []
+                    b = []
+                    for x in range(int(bbox[1]), int(bbox[3])):
+                        for y in range(int(bbox[0]), int(bbox[2])):
+                            color = frame[x,y]
+                            r.append(color[0])
+                            g.append(color[1])
+                            b.append(color[2])
+
+                    r_mean = np.mean(r)
+                    b_mean = np.mean(b)
+                    g_mean = np.mean(g)
+
+                    if (b_mean == max(b_mean, g_mean, r_mean)):
+                        #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (0, 0, 255), 2)
+                        person = Osoba(track.track_id, 2, time_in_video, time_in_video, 0.5 * (int(bbox[0])) + int(bbox[2]), 0.5 * (int(bbox[1]) + int(bbox[3])))
+                        kolejka.dodajOsobe(person)
+                    elif (g_mean == max(b_mean, g_mean, r_mean)):
+                        #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (0, 255, 0), 2)
+                        person = Osoba(track.track_id, 1, time_in_video, time_in_video, 0.5 * ((int(bbox[0])) + int(bbox[2])), 0.5 * ((int(bbox[1]) + int(bbox[3]))))
+                        kolejka.dodajOsobe(person)
+                    elif (r_mean == max(b_mean, g_mean, r_mean)):
+                        #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (255, 0, 0), 2)
+                        person = Osoba(track.track_id, 0, time_in_video, time_in_video, 0.5 * ((int(bbox[0])) + int(bbox[2])), 0.5 * ((int(bbox[1]) + int(bbox[3]))))
+                        kolejka.dodajOsobe(person)
+
+
+                    '''
                     #TODO work on detect colors
                     #r,g,b values for all pixels of frame
                     r = frame[int(bbox[0]*1.05):int(bbox[2]*0.95), int(bbox[1]*1.1):int(bbox[3]*0.9), 2:]
                     g = frame[int(bbox[0]*1.05):int(bbox[2]*0.95), int(bbox[1]*1.1):int(bbox[3]*0.9), 1:2]
                     b = frame[int(bbox[0]*1.05):int(bbox[2]*0.95), int(bbox[1]*1.1):int(bbox[3]*0.9), :1]
-
+                    
 
                     picture_3d=np.stack((r,g,b), axis=2)
 
@@ -277,6 +306,7 @@ def main(_argv):
                         person = Osoba(track.track_id, 0, time_in_video, time_in_video, 0.5 * (int(bbox[0])) + int(bbox[2]), 0.5 * (int(bbox[1]) + int(bbox[3])))
                         kolejka.dodajOsobe(person)
 
+                '''
                 person = kolejka.getOsoba(track.track_id)
                 cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),colors[person.getKategoria()],2)
 
@@ -286,7 +316,7 @@ def main(_argv):
             # if enable info flag then print details about each track
             if FLAGS.info:
                 print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
-            center = (int(((bbox[0]) + (bbox[2]))/2), int(((bbox[1])+(bbox[3]))/2))
+            #center = (int(((bbox[0]) + (bbox[2]))/2), int(((bbox[1])+(bbox[3]))/2))
             #not used
             """pts[track.track_id].append(center)
             for j in range(1, len(pts[track.track_id])):
