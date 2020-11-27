@@ -21,6 +21,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
+import magic
 # deep sort imports
 from deep_sort import preprocessing, nn_matching
 from deep_sort.detection import Detection
@@ -39,7 +40,6 @@ flags.DEFINE_float('iou', 0.45, 'iou threshold')
 flags.DEFINE_float('score', 0.50, 'score threshold')
 flags.DEFINE_boolean('dont_show', False, 'dont show video output')
 flags.DEFINE_boolean('info', False, 'show detailed info of tracked objects')
-flags.DEFINE_boolean('count', False, 'count objects being tracked on screen') #TODO delete this flag, we will use kolejka.getLiczbaOsob()
 flags.DEFINE_string('logs', './outputs/logs.txt', 'path to output logs')
 
 def main(_argv):
@@ -70,7 +70,6 @@ def main(_argv):
 
     from _collections import deque
     pts = [deque(maxlen=30) for _ in range(1000)]
-    counter = []
 
     # load tflite model if flag is set
     if FLAGS.framework == 'tflite':
@@ -88,11 +87,18 @@ def main(_argv):
     #logs
     logs = open(FLAGS.logs, "w")
 
-    # begin video capture
-    try:
-        vid = cv2.VideoCapture(int(video_path))
-    except:
-        vid = cv2.VideoCapture(video_path) #TODO change to exit program
+    # check if file is a video and begin video capture 
+    mime = magic.Magic(mime=True)
+    filename = mime.from_file(video_path)
+    if filename.find('video') != -1:
+        try:
+            vid = cv2.VideoCapture(int(video_path))
+        except:
+            vid = cv2.VideoCapture(video_path)
+    
+    else:
+        print('It is not a video, please choose another file')
+        exit()
 
     out = None
 
@@ -173,10 +179,7 @@ def main(_argv):
         # read in all class names from config
         class_names = utils.read_class_names(cfg.YOLO.CLASSES)
 
-        # by default allow all classes in .names file
-        #allowed_classes = list(class_names.values())
-        
-        # custom allowed classes (uncomment line below to customize tracker for only people)
+        # allowed classes 
         allowed_classes = ['person']
 
         # loop through objects and use class index to get class name, allow only classes in allowed_classes list
@@ -190,9 +193,7 @@ def main(_argv):
             else:
                 names.append(class_name)
         names = np.array(names)
-        #count = len(names)
-        #cv2.putText(frame, "Current people count: {}".format(count), (5, 35), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 255, 0), 2)
-        #print("Current people count: {}".format(count))
+
         # delete detections that are not in allowed_classes
         bboxes = np.delete(bboxes, deleted_indx, axis=0)
         scores = np.delete(scores, deleted_indx, axis=0)
@@ -200,10 +201,6 @@ def main(_argv):
         # encode yolo detections and feed to tracker
         features = encoder(frame, bboxes)
         detections = [Detection(bbox, score, class_name, feature) for bbox, score, class_name, feature in zip(bboxes, scores, names, features)]
-
-        #initialize color map - not used
-        #cmap = plt.get_cmap('tab20b')
-        #colors = [cmap(i)[:3] for i in np.linspace(0, 1, 20)]
 
         # run non-maxima supression
         boxs = np.array([d.tlwh for d in detections])
@@ -215,7 +212,6 @@ def main(_argv):
         # Call the tracker
         tracker.predict()
         tracker.update(detections)
-        #current_count = int(0)
 
         # update tracks
         for track in tracker.tracks:
@@ -226,26 +222,17 @@ def main(_argv):
                     kolejka.usunOsobe(personToDelete)
                 continue 
             bbox = track.to_tlbr()
-            #class_name = track.get_class()
             try:
                 #check if it is new person
                 if kolejka.getOsoba(track.track_id) is None:
+                    
                     #create person, detect color and add to kolejka (listaOsob)
-                
-            # draw bbox on screen
-                #color = colors[int(track.track_id) % len(colors)]
-                #color = [i * 255 for i in color]
-                #color = [(255,0,0), (0,255,0), (0,0,255)]
-                #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,0),2)
-                #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)
-                #cv2.putText(frame, class_name + "-" + str(track.track_id),(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
 
-                    #TODO - cut x% to better color recognition
                     r = []
                     g = []
                     b = []
-                    for x in range(int(bbox[1]), int(bbox[3])):
-                        for y in range(int(bbox[0]), int(bbox[2])):
+                    for x in range(int(bbox[1]*1.1), int(bbox[3]*0.9)):
+                        for y in range(int(bbox[0]*1.05), int(bbox[2]*0.95)):
                             color = frame[x,y]
                             r.append(color[0])
                             g.append(color[1])
@@ -255,106 +242,38 @@ def main(_argv):
                     b_mean = np.mean(b)
                     g_mean = np.mean(g)
 
+                    #draw boxes for each category depending on r, g, b values
                     if (b_mean == max(b_mean, g_mean, r_mean)):
-                        #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (0, 0, 255), 2)
                         person = Osoba(track.track_id, 2, time_in_video, time_in_video, 0.5 * (int(bbox[0])) + int(bbox[2]), 0.5 * (int(bbox[1]) + int(bbox[3])))
                         kolejka.dodajOsobe(person)
                     elif (g_mean == max(b_mean, g_mean, r_mean)):
-                        #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (0, 255, 0), 2)
                         person = Osoba(track.track_id, 1, time_in_video, time_in_video, 0.5 * ((int(bbox[0])) + int(bbox[2])), 0.5 * ((int(bbox[1]) + int(bbox[3]))))
                         kolejka.dodajOsobe(person)
                     elif (r_mean == max(b_mean, g_mean, r_mean)):
-                        #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (255, 0, 0), 2)
                         person = Osoba(track.track_id, 0, time_in_video, time_in_video, 0.5 * ((int(bbox[0])) + int(bbox[2])), 0.5 * ((int(bbox[1]) + int(bbox[3]))))
                         kolejka.dodajOsobe(person)
 
-
-                    '''
-                    #TODO work on detect colors
-                    #r,g,b values for all pixels of frame
-                    r = frame[int(bbox[0]*1.05):int(bbox[2]*0.95), int(bbox[1]*1.1):int(bbox[3]*0.9), 2:]
-                    g = frame[int(bbox[0]*1.05):int(bbox[2]*0.95), int(bbox[1]*1.1):int(bbox[3]*0.9), 1:2]
-                    b = frame[int(bbox[0]*1.05):int(bbox[2]*0.95), int(bbox[1]*1.1):int(bbox[3]*0.9), :1]
-                    
-
-                    picture_3d=np.stack((r,g,b), axis=2)
-
-                    #main color for each pixel - index (0-r, 1-g, 2-b)
-                    main_color=np.argmax(picture_3d,axis=2)
-
-                    #checking max value - index
-                    max_value=np.argmax(np.bincount(main_color.flat))
-
-                    #print(str(maxx))
-
-                    #TODO values of timestamp koniec ???
-                    if (str(max_value)=="2"):
-                        print("Blue")
-                        #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(0,0,255),2)
-                        person = Osoba(track.track_id, 2, time_in_video, time_in_video, 0.5 * (int(bbox[0])) + int(bbox[2]), 0.5 * (int(bbox[1]) + int(bbox[3])))
-                        kolejka.dodajOsobe(person)
-
-                    if (str(max_value)=="1"):
-                        print("Green")
-                        #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(0,255,0),2)
-                        person = Osoba(track.track_id, 1, time_in_video, time_in_video, 0.5 * ((int(bbox[0])) + int(bbox[2])), 0.5 * ((int(bbox[1]) + int(bbox[3]))))
-                        kolejka.dodajOsobe(person)
-
-                    if (str(max_value)=="0"):
-                        print("Red")
-                        #cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,0,0),2)
-                        person = Osoba(track.track_id, 0, time_in_video, time_in_video, 0.5 * (int(bbox[0])) + int(bbox[2]), 0.5 * (int(bbox[1]) + int(bbox[3])))
-                        kolejka.dodajOsobe(person)
-
-                '''
                 person = kolejka.getOsoba(track.track_id)
                 cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),colors[person.getKategoria()],2)
 
-                #print(kolejka.getLiczbaOsob())
             except ValueError:
                 pass
             # if enable info flag then print details about each track
             if FLAGS.info:
                 print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
-            #center = (int(((bbox[0]) + (bbox[2]))/2), int(((bbox[1])+(bbox[3]))/2))
-            #not used
-            """pts[track.track_id].append(center)
-            for j in range(1, len(pts[track.track_id])):
-                if pts[track.track_id][j-1] is None or pts[track.track_id][j] is None:
-                    continue
 
-                thickness = int(np.sqrt(64/float(j+1))*2)
-                cv2.line(frame, (pts[track.track_id][j-1]), (pts[track.track_id][j]), color, thickness)
-            
-            height, width, _ = frame.shape
-            cv2.line(frame, (0, int(height)), (width, int(height)), (0, 0, 0), thickness=2)
-            cv2.line(frame, (0, 0), (width, 0), (0, 0, 0), thickness=2)
-
-            center_y = int(((bbox[1])+(bbox[3]))/2)
-
-            if center_y <= int(height) and center_y >= 0:
-                if class_name == 'person':
-                    counter.append(int(track.track_id))
-                    current_count += 1
-            """
-        #total_count = len(set(counter))
-        #TODO change current_count to kolejka.getLiczbaOsob() - DONE
-        cv2.putText(frame, "Current People Count: " + str(kolejka.getLiczbaOsob()), (0, 30), 0, 1, (255, 255, 0), 2)
-        #cv2.putText(frame, "Total Vehicle Count: " + str(total_count), (0,130), 0, 1, (0,0,255), 2)
+        cv2.putText(frame, "Current People Count: " + str(kolejka.getLiczbaOsob()), (0, 35), cv2.FONT_HERSHEY_DUPLEX, 1.5, (255, 255, 0), 2)
         # calculate frames per second of running detections
         fps = 1.0 / (time.time() - start_time)
         print("FPS: %.2f" % fps)
         result = np.asarray(frame)
         result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
-        # write to log file
-        #TODO add categories
-        #TODO change current_count to kolejka.getLiczbaOsob() - DONE
+        # write to log file --> time;number of people detected;people in cat.1;people in cat.2;people in cat.3
         logs.write(str(time_in_video) + ";" + str(kolejka.getLiczbaOsob()) + ";\n")
         
-        # TODO when color recognition works - use below lines to write logs
-        #peopleInCategories = kolejka.getLiczbaOsobKategorie()
-        #logs.write(str(time_in_video) + ";" + str(kolejka.getLiczbaOsob()) + ";" + str(peopleInCategories[0]) + ";" + str(peopleInCategories[1]) + ";" + str(peopleInCategories[2]) + "\n")
+        peopleInCategories = kolejka.getLiczbaOsobKategorie()
+        logs.write(str(time_in_video) + ";" + str(kolejka.getLiczbaOsob()) + ";" + str(peopleInCategories[0]) + ";" + str(peopleInCategories[1]) + ";" + str(peopleInCategories[2]) + "\n")
         
         if not FLAGS.dont_show:
             cv2.imshow("Output Video", result)

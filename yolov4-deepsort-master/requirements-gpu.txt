@@ -6,3 +6,4 @@ absl-py
 matplotlib
 easydict
 pillow
+python-magic-bin==0.4.14
