@@ -34,5 +34,5 @@ class Kolejka:
             if osoba.getKategoria() == 1:
                 liczbaOsobKategorie[1] += 1
             if osoba.getKategoria() == 2:
-                liczbaOsobKategorie[2] += 2
+                liczbaOsobKategorie[2] += 1
         return liczbaOsobKategorie
