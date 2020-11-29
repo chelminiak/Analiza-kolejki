@@ -69,4 +69,6 @@ save_model.py:
     (default: 0.45)
   --score: confidence threshold
     (default: 0.50)
+  --logs: path to the output logs
+    (default: './outputs/logs.txt')
 ```
