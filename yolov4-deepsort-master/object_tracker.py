@@ -29,19 +29,16 @@ from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker
 from tools import generate_detections as gdet
 
-flags.DEFINE_string('framework', 'tf', '(tf, tflite, trt')
 flags.DEFINE_string('weights', './checkpoints/yolov4-tiny-416',
                     'path to weights file')
 flags.DEFINE_integer('size', 416, 'resize images to')
 flags.DEFINE_boolean('tiny', True, 'yolo or yolo-tiny')
-flags.DEFINE_string('model', 'yolov4', 'yolov3 or yolov4')
 flags.DEFINE_string('video', './data/video/test.mp4', 'path to input video or set to 0 for webcam')
 flags.DEFINE_string('output', None, 'path to output video')
 flags.DEFINE_string('output_format', 'XVID', 'codec used in VideoWriter when saving video to file')
 flags.DEFINE_float('iou', 0.45, 'iou threshold')
 flags.DEFINE_float('score', 0.50, 'score threshold')
-# lags.DEFINE_boolean('dont_show', True, 'dont show video output')
-flags.DEFINE_boolean('info', False, 'show detailed info of tracked objects')
+# flags.DEFINE_boolean('dont_show', True, 'dont show video output')
 flags.DEFINE_string('logs', './outputs/logs.txt', 'path to output logs')
 
 
@@ -66,29 +63,18 @@ def main(_argv):
     STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config(FLAGS)
     input_size = FLAGS.size
     video_path = FLAGS.video
+
+    # define color of boxes for categories
     colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]  # 0-red, 1-green, 2-blue
 
-    # kolejka
+    # define kolejka
     kolejka = Kolejka(0)
 
-    # from _collections import deque
-    # pts = [deque(maxlen=30) for _ in range(1000)]
+    # load saved model
+    saved_model_loaded = tf.saved_model.load(FLAGS.weights, tags=[tag_constants.SERVING])
+    infer = saved_model_loaded.signatures['serving_default']
 
-    # load tflite model if flag is set
-    #TODO? - weuse framework = 'tf' so if condition is not necessary, only else
-    if FLAGS.framework == 'tflite':
-        interpreter = tf.lite.Interpreter(model_path=FLAGS.weights)
-        interpreter.allocate_tensors()
-        input_details = interpreter.get_input_details()
-        output_details = interpreter.get_output_details()
-        print(input_details)
-        print(output_details)
-    # otherwise load standard tensorflow saved model
-    else:
-        saved_model_loaded = tf.saved_model.load(FLAGS.weights, tags=[tag_constants.SERVING])
-        infer = saved_model_loaded.signatures['serving_default']
-
-    # logs
+    # open file to write logs
     logs = open(FLAGS.logs, "w")
 
     # check if file is a video and begin video capture 
@@ -104,7 +90,7 @@ def main(_argv):
         print('It is not a video, please choose another file')
         exit()
 
-    #alternative version?
+    # alternative version?
     '''
     try:
         vid = cv2.VideoCapture(int(video_path))
@@ -130,38 +116,24 @@ def main(_argv):
         return_value, frame = vid.read()
         if return_value:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            #image = Image.fromarray(frame)
+            # image = Image.fromarray(frame)
         else:
             print('Video has ended or failed, try a different video format!')
             break
         frame_num += 1
         print('Frame #: ', frame_num)
-        #frame_size = frame.shape[:2]
         image_data = cv2.resize(frame, (input_size, input_size))
         image_data = image_data / 255.
         image_data = image_data[np.newaxis, ...].astype(np.float32)
         start_time = time.time()
         time_in_video = vid.get(cv2.CAP_PROP_POS_MSEC) / 1000  # in seconds
 
-        # run detections on tflite if flag is set
-        # TODO? - we use framework='tf' so if condition is not necessary, only else
-        if FLAGS.framework == 'tflite':
-            interpreter.set_tensor(input_details[0]['index'], image_data)
-            interpreter.invoke()
-            pred = [interpreter.get_tensor(output_details[i]['index']) for i in range(len(output_details))]
-            # run detections using yolov3 if flag is set
-            # if FLAGS.model == 'yolov3' and FLAGS.tiny == True:
-            #    boxes, pred_conf = filter_boxes(pred[1], pred[0], score_threshold=0.25,
-            #                                    input_shape=tf.constant([input_size, input_size]))
-            # else:
-            boxes, pred_conf = filter_boxes(pred[0], pred[1], score_threshold=0.25,
-                                            input_shape=tf.constant([input_size, input_size]))
-        else:
-            batch_data = tf.constant(image_data)
-            pred_bbox = infer(batch_data)
-            for key, value in pred_bbox.items():
-                boxes = value[:, :, 0:4]
-                pred_conf = value[:, :, 4:]
+        # run detections
+        batch_data = tf.constant(image_data)
+        pred_bbox = infer(batch_data)
+        for key, value in pred_bbox.items():
+            boxes = value[:, :, 0:4]
+            pred_conf = value[:, :, 4:]
 
         boxes, scores, classes, valid_detections = tf.image.combined_non_max_suppression(
             boxes=tf.reshape(boxes, (tf.shape(boxes)[0], -1, 1, 4)),
@@ -186,14 +158,8 @@ def main(_argv):
         original_h, original_w, _ = frame.shape
         bboxes = utils.format_boxes(bboxes, original_h, original_w)
 
-        # store all predictions in one parameter for simplicity when calling functions
-        # pred_bbox = [bboxes, scores, classes, num_objects]
-
         # read in all class names from config
         class_names = utils.read_class_names(cfg.YOLO.CLASSES)
-
-        # allowed classes 
-        # allowed_classes = ['person']
 
         # loop through objects and use class index to get class name, allow only person class
         names = []
@@ -236,19 +202,17 @@ def main(_argv):
                     kolejka.usunOsobe(person_to_delete)
                 continue
             bbox = track.to_tlbr()
-            # try:
+
             # check if it is new person
             if kolejka.getOsoba(track.track_id) is None:
-
                 # create person, detect color and add to kolejka (listaOsob)
 
+                # read rgb values of pixels in bbox (bbox is trimmed to get more acurate detection of color)
                 r = []
                 g = []
                 b = []
                 bbox_width = bbox[2] - bbox[0]
-                #print(bbox_width)
                 bbox_height = bbox[3] - bbox[1]
-                #print(bbox_height)
                 for x in range(int(bbox[0] + (0.1 * bbox_width)), int(bbox[2] - (0.1 * bbox_width))):
                     for y in range(int(bbox[1] + (0.1 * bbox_height)), int(bbox[3] - (0.1 * bbox_height))):
                         color = frame[y, x]
@@ -260,7 +224,8 @@ def main(_argv):
                 b_mean = np.mean(b)
                 g_mean = np.mean(g)
 
-                # draw boxes for each category depending on r, g, b values
+                # create person for specific category depending on r, g, b values
+                # add person to kolejka
                 if b_mean == max(b_mean, g_mean, r_mean):
                     person = Osoba(track.track_id, 2, time_in_video, time_in_video, 0.5 * (int(bbox[0]) + int(bbox[2])),
                                    0.5 * (int(bbox[1]) + int(bbox[3])))
@@ -274,18 +239,15 @@ def main(_argv):
                                    0.5 * ((int(bbox[0])) + int(bbox[2])), 0.5 * (int(bbox[1]) + int(bbox[3])))
                     kolejka.dodajOsobe(person)
 
+            # get category of person and draw box in color of the category
             person = kolejka.getOsoba(track.track_id)
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),
                           colors[person.getKategoria()], 2)
 
-            # except ValueError:
-            #    pass
-            # if enable info flag then print details about each track
-            if FLAGS.info:
-                print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
-
+        # show current number of people on video
         cv2.putText(frame, "Current People Count: " + str(kolejka.getLiczbaOsob()), (0, 35), cv2.FONT_HERSHEY_DUPLEX,
                     1.5, (255, 255, 0), 2)
+
         # calculate frames per second of running detections
         fps = 1.0 / (time.time() - start_time)
         print("FPS: %.2f" % fps)
@@ -293,8 +255,6 @@ def main(_argv):
         result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
         # write to log file --> time;number of people detected;people in cat.1;people in cat.2;people in cat.3
-        # logs.write(str(time_in_video) + ";" + str(kolejka.getLiczbaOsob()) + ";\n")
-
         people_in_categories = kolejka.getLiczbaOsobKategorie()
         logs.write(
             str(time_in_video) + ";" + str(kolejka.getLiczbaOsob()) + ";" + str(people_in_categories[0]) + ";" + str(
@@ -307,6 +267,7 @@ def main(_argv):
         if FLAGS.output:
             out.write(result)
         if cv2.waitKey(1) & 0xFF == ord('q'): break
+
     cv2.destroyAllWindows()
     logs.close()
 
