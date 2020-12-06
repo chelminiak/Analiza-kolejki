@@ -29,17 +29,18 @@ from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker
 from tools import generate_detections as gdet
 
-flags.DEFINE_string('weights', './checkpoints/yolov4-tiny-416',
-                    'path to weights file')
-flags.DEFINE_integer('size', 416, 'resize images to')
-flags.DEFINE_boolean('tiny', True, 'yolo or yolo-tiny')
-flags.DEFINE_string('video', './data/video/test.mp4', 'path to input video or set to 0 for webcam')
-flags.DEFINE_string('output', None, 'path to output video')
-flags.DEFINE_string('output_format', 'XVID', 'codec used in VideoWriter when saving video to file')
-flags.DEFINE_float('iou', 0.45, 'iou threshold')
-flags.DEFINE_float('score', 0.50, 'score threshold')
+# flags.DEFINE_string('weights', './checkpoints/yolov4-tiny-416', 'path to weights file')
+# flags.DEFINE_integer('size', 416, 'resize images to')
+# flags.DEFINE_boolean('tiny', True, 'yolo or yolo-tiny')
+# flags.DEFINE_string('video', './data/video/test.mp4', 'path to input video or set to 0 for webcam')
+# flags.DEFINE_string('output', None, 'path to output video')
+# flags.DEFINE_string('output_format', 'XVID', 'codec used in VideoWriter when saving video to file')
+# flags.DEFINE_float('iou', 0.45, 'iou threshold')
+# flags.DEFINE_float('score', 0.50, 'score threshold')
+
+
 # flags.DEFINE_boolean('dont_show', True, 'dont show video output')
-flags.DEFINE_string('logs', './outputs/logs.txt', 'path to output logs')
+# flags.DEFINE_string('logs', './outputs/logs.txt', 'path to output logs')
 
 
 # object_tracker.py --video ścieżka_do_video --output output_video --logs /etc/home/
@@ -48,8 +49,7 @@ flags.DEFINE_string('logs', './outputs/logs.txt', 'path to output logs')
 # find.findPerson(video_path, output, logs)
 
 class find:
-    # def findPerson(self, videopath, outputvideopath, logpath):
-    def findPerson(self):
+    def findPerson(self, video_path, output_video_path, log_path):
         # return 1 - wrong file format
         # return 0 - success
 
@@ -71,8 +71,10 @@ class find:
         config.gpu_options.allow_growth = True
         session = InteractiveSession(config=config)
         STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config(FLAGS)
-        input_size = FLAGS.size
-        video_path = FLAGS.video
+
+        # resize images to
+        input_size = 416
+        # video_path = FLAGS.video
 
         # define color of boxes for categories
         colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]  # 0-red, 1-green, 2-blue
@@ -81,11 +83,11 @@ class find:
         kolejka = Kolejka(0)
 
         # load saved model
-        saved_model_loaded = tf.saved_model.load(FLAGS.weights, tags=[tag_constants.SERVING])
+        saved_model_loaded = tf.saved_model.load('./checkpoints/yolov4-tiny-416', tags=[tag_constants.SERVING])
         infer = saved_model_loaded.signatures['serving_default']
 
         # open file to write logs
-        logs = open(FLAGS.logs, "w")
+        logs = open(log_path, "w")
 
         # check if file is a video and begin video capture
         mime = magic.Magic(mime=True)
@@ -94,7 +96,7 @@ class find:
             try:
                 vid = cv2.VideoCapture(int(video_path))
             except:
-                vid = cv2.VideoCapture(video_path)
+                # vid = cv2.VideoCapture(video_path)
                 return 1
         else:
             return 1
@@ -110,16 +112,15 @@ class find:
             exit()
         '''
 
-        out = None
+        # out = None
 
-        # get video ready to save locally if flag is set
-        if FLAGS.output:
-            # by default VideoCapture returns float instead of int
-            width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
-            height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            fps = int(vid.get(cv2.CAP_PROP_FPS))
-            codec = cv2.VideoWriter_fourcc(*FLAGS.output_format)
-            out = cv2.VideoWriter(FLAGS.output, codec, fps, (width, height))
+        # get video ready to save locally
+        # by default VideoCapture returns float instead of int
+        width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps = int(vid.get(cv2.CAP_PROP_FPS))
+        codec = cv2.VideoWriter_fourcc(*'XVID')
+        out = cv2.VideoWriter(output_video_path, codec, fps, (width, height))
 
         frame_num = 0
         # while video is running
@@ -155,8 +156,8 @@ class find:
                     pred_conf, (tf.shape(pred_conf)[0], -1, tf.shape(pred_conf)[-1])),
                 max_output_size_per_class=50,
                 max_total_size=50,
-                iou_threshold=FLAGS.iou,
-                score_threshold=FLAGS.score
+                iou_threshold=0.45,
+                score_threshold=0.5
             )
 
             # convert data to numpy arrays and slice out unused elements
@@ -281,8 +282,8 @@ class find:
             #    cv2.imshow("Output Video", result)
 
             # if output flag is set, save video file
-            if FLAGS.output:
-                out.write(result)
+            # if FLAGS.output:
+            out.write(result)
             # if cv2.waitKey(1) & 0xFF == ord('q'): break
 
         # cv2.destroyAllWindows()
