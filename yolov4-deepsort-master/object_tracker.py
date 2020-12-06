@@ -41,10 +41,18 @@ flags.DEFINE_float('score', 0.50, 'score threshold')
 # flags.DEFINE_boolean('dont_show', True, 'dont show video output')
 flags.DEFINE_string('logs', './outputs/logs.txt', 'path to output logs')
 
-#object_tracker.py --video ścieżka_do_video --output output_video --logs /etc/home/
+
+# object_tracker.py --video ścieżka_do_video --output output_video --logs /etc/home/
+
+# chyba jednak tak trzeba bedzie
+# find.findPerson(video_path, output, logs)
 
 class find:
-    def findPerson(_argv):
+    # def findPerson(self, videopath, outputvideopath, logpath):
+    def findPerson(self):
+        # return 1 - wrong file format
+        # return 0 - success
+
         # Definition of the parameters
         max_cosine_distance = 0.4
         nn_budget = None
@@ -87,10 +95,11 @@ class find:
                 vid = cv2.VideoCapture(int(video_path))
             except:
                 vid = cv2.VideoCapture(video_path)
-
+                return 1
         else:
-            print('It is not a video, please choose another file')
-            exit()
+            return 1
+            # print('It is not a video, please choose another file')
+            # exit()
 
         # alternative version?
         '''
@@ -120,8 +129,11 @@ class find:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 # image = Image.fromarray(frame)
             else:
-                print('Video has ended or failed, try a different video format!')
-                break
+                cv2.destroyAllWindows()
+                logs.close()
+                return 0
+                # print('Video has ended or failed, try a different video format!')
+                # break
             frame_num += 1
             print('Frame #: ', frame_num)
             image_data = cv2.resize(frame, (input_size, input_size))
@@ -229,7 +241,8 @@ class find:
                     # create person for specific category depending on r, g, b values
                     # add person to kolejka
                     if b_mean == max(b_mean, g_mean, r_mean):
-                        person = Osoba(track.track_id, 2, time_in_video, time_in_video, 0.5 * (int(bbox[0]) + int(bbox[2])),
+                        person = Osoba(track.track_id, 2, time_in_video, time_in_video,
+                                       0.5 * (int(bbox[0]) + int(bbox[2])),
                                        0.5 * (int(bbox[1]) + int(bbox[3])))
                         kolejka.dodajOsobe(person)
                     elif g_mean == max(b_mean, g_mean, r_mean):
@@ -247,7 +260,8 @@ class find:
                               colors[person.getKategoria()], 2)
 
             # show current number of people on video
-            cv2.putText(frame, "Current People Count: " + str(kolejka.getLiczbaOsob()), (0, 35), cv2.FONT_HERSHEY_DUPLEX,
+            cv2.putText(frame, "Current People Count: " + str(kolejka.getLiczbaOsob()), (0, 35),
+                        cv2.FONT_HERSHEY_DUPLEX,
                         1.5, (255, 255, 0), 2)
 
             # calculate frames per second of running detections
@@ -259,7 +273,8 @@ class find:
             # write to log file --> time;number of people detected;people in cat.1;people in cat.2;people in cat.3
             people_in_categories = kolejka.getLiczbaOsobKategorie()
             logs.write(
-                str(time_in_video) + ";" + str(kolejka.getLiczbaOsob()) + ";" + str(people_in_categories[0]) + ";" + str(
+                str(time_in_video) + ";" + str(kolejka.getLiczbaOsob()) + ";" + str(
+                    people_in_categories[0]) + ";" + str(
                     people_in_categories[1]) + ";" + str(people_in_categories[2]) + "\n")
 
             # if not FLAGS.dont_show:
@@ -268,14 +283,16 @@ class find:
             # if output flag is set, save video file
             if FLAGS.output:
                 out.write(result)
-            if cv2.waitKey(1) & 0xFF == ord('q'): break
+            # if cv2.waitKey(1) & 0xFF == ord('q'): break
 
-        cv2.destroyAllWindows()
-        logs.close()
+        # cv2.destroyAllWindows()
+        # logs.close()
 
 
+'''
 if __name__ == '__main__':
     try:
         app.run(main)
     except SystemExit:
         pass
+'''
