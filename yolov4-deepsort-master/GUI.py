@@ -1,6 +1,6 @@
 import os
 import PySimpleGUI as sg
-from object_tracker import find
+from object_tracker import findPerson
 import random
 
 layout = [
