@@ -50,9 +50,11 @@ from tools import generate_detections as gdet
 # findPerson(video_path, output, logs)
 
 class find:
+
     frame_num = 0
 
-    def findPerson(self, video_path, output_video_path, log_path):
+    def findPerson(video_path, output_video_path, log_path):
+
         # return 1 - wrong file format
         # return 0 - success
 
