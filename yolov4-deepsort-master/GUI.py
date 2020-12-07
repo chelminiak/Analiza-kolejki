@@ -1,6 +1,6 @@
 import os
 import PySimpleGUI as sg
-from object_tracker import find
+from object_tracker import findPerson
 import random
 import time
 
@@ -51,7 +51,7 @@ while True:
             infoWindow = sg.Window("Analiza w toku...", [
                 [sg.Text("Po zamknięciu tego okna program stanie się nieresponsywny. Po zakończeniu przetwarzania wyświetlony zostanie odpowiedni komunikat"), ]], resizable=False)
             infoWindow.read()
-            analyze = find.findPerson(values["-VIDEOIN-"], videopath, logpath)
+            analyze = findPerson(values["-VIDEOIN-"], videopath, logpath)
             while analyze != 0 and analyze !=1:
                 infoWindow.refresh()
             if analyze == 0:
