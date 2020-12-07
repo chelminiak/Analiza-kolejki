@@ -39,19 +39,23 @@ while True:
         break
     # Start anlysis
     if event == "Rozpocznij analizę":
-        if os.path.join(values["-VIDEOIN-"]):
+        #check if all paths in GUI are selected
+        if os.path.join(values["-VIDEOIN-"]) and os.path.join(values["-LOGOUT-"]) and os.path.join(values["-VIDEOOUT-"]):
             if values["-NLOGOUT-"]:
                 logpath = os.path.join(values["-LOGOUT-"], values["-NLOGOUT-"] + '.txt')
             else:
+                #randomize log name if not provided by user
                 logpath = os.path.join(values['-LOGOUT-'], 'log' + str(random.randint(0, 100000)) + '.txt')
             if values["-NVIDEOOUT-"]:
                 videopath = os.path.join(values["-VIDEOOUT-"], values["-NVIDEOOUT-"] + '.avi')
             else:
+                # randomize video name if not provided by user
                 videopath = os.path.join(values["-VIDEOOUT-"], 'output' + str(random.randint(0, 100000)) + '.avi')
             infoWindow = sg.Window("Analiza w toku...", [
-                [sg.Text("Po zamknięciu tego okna program stanie się nieresponsywny. Po zakończeniu przetwarzania wyświetlony zostanie odpowiedni komunikat"), ]], resizable=False)
+                [sg.Text("Zamknięcie tego okna spowoduje rozpoczęcie analizy nagrania. w tym czasie program może stać się nieresponsywny. Po zakończeniu przetwarzania wyświetlony zostanie odpowiedni komunikat"), ]], resizable=False)
             infoWindow.read()
             analyze = findPerson(values["-VIDEOIN-"], videopath, logpath)
+            #check status of video's analysis
             while analyze != 0 and analyze !=1:
                 infoWindow.refresh()
             if analyze == 0:
