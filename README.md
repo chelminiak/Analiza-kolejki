@@ -39,4 +39,4 @@ Wykonaj poniższą komendę albo uruchom program poprzez przycisk w środowisku 
 python GUI.py
 ```
 
-
+Do poprawnego działania pliku należy podać ścieżkę do pliku wejściowego oraz dwie ścieżki do folderów, w których zapisane zostaną wynikowe pliki z logami i wideo. Jeżeli użytkownik nie poda nazwy wynikowych plików zostaną one wylosowane, zgodnie z następującą regułą: [log/video][randint(0,100000)].[txt/avi]. W celu zwiększenia intuicyjności programu program automatycznie dopisze rozszerzenie txt/avi po podanej nawie pliku wynikowego.
