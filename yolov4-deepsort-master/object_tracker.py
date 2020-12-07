@@ -2,7 +2,6 @@ import os
 from kolejka import Kolejka
 from osoba import Osoba
 
-# comment out below line to enable tensorflow logging outputs
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import time
 import tensorflow as tf
@@ -29,36 +28,13 @@ from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker
 from tools import generate_detections as gdet
 
-
-# flags.DEFINE_string('weights', './checkpoints/yolov4-tiny-416', 'path to weights file')
-# flags.DEFINE_integer('size', 416, 'resize images to')
-# flags.DEFINE_boolean('tiny', True, 'yolo or yolo-tiny')
-# flags.DEFINE_string('video', './data/video/test.mp4', 'path to input video or set to 0 for webcam')
-# flags.DEFINE_string('output', None, 'path to output video')
-# flags.DEFINE_string('output_format', 'XVID', 'codec used in VideoWriter when saving video to file')
-# flags.DEFINE_float('iou', 0.45, 'iou threshold')
-# flags.DEFINE_float('score', 0.50, 'score threshold')
-
-
-# flags.DEFINE_boolean('dont_show', True, 'dont show video output')
-# flags.DEFINE_string('logs', './outputs/logs.txt', 'path to output logs')
-
-
-# object_tracker.py --video ścieżka_do_video --output output_video --logs /etc/home/
-
-# chyba jednak tak trzeba bedzie
-# findPerson(video_path, output, logs)
-
 class find:
 
     frame_num = 0
 
     def findPerson(video_path, output_video_path, log_path):
 
-        # return 1 - wrong file format
-        # return 0 - success
-
-        # Definition of the parameters
+        # definition of the parameters
         max_cosine_distance = 0.4
         nn_budget = None
         nms_max_overlap = 1.0
@@ -74,12 +50,9 @@ class find:
         # load configuration for object detector
         config = ConfigProto()
         config.gpu_options.allow_growth = True
-        # session = InteractiveSession(config=config)
-        # STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config(FLAGS)
 
         # resize images to
         input_size = 416
-        # video_path = FLAGS.video
 
         # define color of boxes for categories
         colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]  # 0-red, 1-green, 2-blue
@@ -104,19 +77,6 @@ class find:
                 return 1
         else:
             return 1
-            # print('It is not a video, please choose another file')
-            # exit()
-
-        # alternative version?
-        '''
-        try:
-            vid = cv2.VideoCapture(video_path)
-        except:
-            print("Try again with another file")
-            exit()
-        '''
-
-        # out = None
 
         # get video ready to save locally
         # by default VideoCapture returns float instead of int
@@ -126,19 +86,17 @@ class find:
         codec = cv2.VideoWriter_fourcc(*'XVID')
         out = cv2.VideoWriter(output_video_path, codec, fps, (width, height))
 
-        # frame_num = 0
         # while video is running
         while True:
             return_value, frame = vid.read()
             if return_value:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                # image = Image.fromarray(frame)
+
             else:
                 cv2.destroyAllWindows()
                 logs.close()
                 return 0
-                # print('Video has ended or failed, try a different video format!')
-                # break
+
             find.frame_num += 1
             print('Frame #: ', find.frame_num)
             image_data = cv2.resize(frame, (input_size, input_size))
@@ -282,22 +240,6 @@ class find:
                     people_in_categories[0]) + ";" + str(
                     people_in_categories[1]) + ";" + str(people_in_categories[2]) + "\n")
 
-            # if not FLAGS.dont_show:
-            #    cv2.imshow("Output Video", result)
 
-            # if output flag is set, save video file
-            # if FLAGS.output:
             out.write(result)
-            # if cv2.waitKey(1) & 0xFF == ord('q'): break
 
-        # cv2.destroyAllWindows()
-        # logs.close()
-
-
-'''
-if __name__ == '__main__':
-    try:
-        app.run(main)
-    except SystemExit:
-        pass
-'''
